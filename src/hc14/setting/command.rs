@@ -16,7 +16,6 @@ impl GenerateAtCommand for BaudRate {
     /// let baud_command = baudrate_115200.make_command();
     /// assert_eq!(baud_command, b"AT+B115200");
     /// ```
-    ///
     fn make_command<'a>(&self) -> &'a [u8] {
         match self {
             BaudRate::Bps1200 => b"AT+B1200",
