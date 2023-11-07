@@ -15,14 +15,12 @@ where
         let at_off = set_pin.set_high();
         delay.delay_us(100_000_u32); // delay 0.1s
         match at_off {
-            Ok(_) => {
-                return Ok(Self {
-                    serial,
-                    set_pin,
-                    delay,
-                    mode: PhantomData::<Normal>,
-                })
-            }
+            Ok(_) => Ok(Self {
+                serial,
+                set_pin,
+                delay,
+                mode: PhantomData::<Normal>,
+            }),
             Err(_) => Err(nb::Error::Other(())),
         }
     }
@@ -148,12 +146,12 @@ where
 ///```
 pub fn format_converter<'a>(value: &'a [u8], response: &'a [u8]) -> Result<i32, &'a str> {
     let result = match response {
-        &[79, 75, 43, 80, 58, 43] => CommandParser::parse(&value)
+        &[79, 75, 43, 80, 58, 43] => CommandParser::parse(value)
             .expect_identifier(&[79, 75, 43, 80, 58, 43])
             .expect_int_parameter()
             .expect_identifier(b"dBm\r\n")
             .finish(),
-        _ => CommandParser::parse(&value)
+        _ => CommandParser::parse(value)
             .expect_identifier(response)
             .expect_int_parameter()
             .expect_identifier(b"\r\n")
@@ -161,9 +159,7 @@ pub fn format_converter<'a>(value: &'a [u8], response: &'a [u8]) -> Result<i32, 
     };
 
     match result {
-        Ok(n) => {
-            return Ok(n.0);
-        }
+        Ok(n) => Ok(n.0),
         Err(_) => Err(nb::Error::Other("Error: Type conversion error")),
     }
 }

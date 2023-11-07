@@ -2,7 +2,7 @@
 
 ![No Std][no-std-badge]
 
-**[[中文指南]](./README-zh.md)**
+**[[中文指南]](./README.md)**
 
 This is a driver program for the HC-14 wireless radio transceiver serial module.
 

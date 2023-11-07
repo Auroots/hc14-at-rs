@@ -80,7 +80,7 @@ where
     }
 
     /// **[Configuration]**: 将整个缓冲区写入串行端口
-    pub fn send_buffer<'a>(&mut self, buffer: &'a [u8]) -> Result<bool, Error<crate::Error>> {
+    pub fn send_buffer(&mut self, buffer: &[u8]) -> Result<bool, Error<crate::Error>> {
         let mut verify = false;
         for ch in buffer {
             verify = self.send_byte(*ch).is_ok();
@@ -124,7 +124,7 @@ where
     ///  hc14_configure.wirte_command(&AT_COMMAND_QUERY_VERSION, &mut buffer);
     ///
     pub fn wirte_command<'a>(&mut self, command: &[u8], buffer: &'a mut [u8]) -> &'a [u8] {
-        self.send_buffer(&command).unwrap();
+        self.send_buffer(command).unwrap();
         self.read_buffer(buffer)
     }
 
@@ -217,7 +217,7 @@ where
         // 使用迭代器输出分离的数字
         {
             for (index, digit) in buf.iter().rev().enumerate() {
-                let ascii_value: u8 = (digit + 48) as u8;
+                let ascii_value: u8 = digit + 48;
                 channel_command[5 + index] = ascii_value;
             }
         }

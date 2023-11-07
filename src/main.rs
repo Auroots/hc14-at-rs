@@ -51,17 +51,7 @@ fn main() -> ! {
 
     // 使用配置的时钟配置创建一个精准延迟函数
     // Create a custom delay function with precise timing
-    let clocks = if 1 == 1 {
-        rcc.cfgr.use_hse(8.MHz()).freeze(&mut flash.acr)
-    } else {
-        // 如果硬件不遵循 rcc，则使用更快的时钟来补偿
-        // If the hardware doesn't follow RCC, use a faster clock to compensate
-        rcc.cfgr
-            .use_hse(8.MHz())
-            .sysclk(108.MHz())
-            .pclk1(6.MHz())
-            .freeze(&mut flash.acr)
-    };
+    let clocks = rcc.cfgr.sysclk(48.MHz()).freeze(&mut flash.acr);
 
     // 创建一个具有自定义精度的阻塞延迟函数
     // Create a custom precise delay function

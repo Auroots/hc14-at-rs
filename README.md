@@ -2,7 +2,7 @@
 
 ![No Std][no-std-badge]
 
-**[[English]](./README.md)**
+**[[English]](./README-en.md)**
 
 用于 hc-14 无线电收发器串行模块的驱动程序。
 
@@ -41,8 +41,6 @@ hc14_normal.send_buffer(buf).unwrap();
 let buf_str = "hc14";
 hc14_normal.send_string(buf_str);
 ```
-
-
 
 <img src="./image/IMG_20231107_152253.jpg" alt="IMG_20231107_152253" style="zoom:33%;" />
 

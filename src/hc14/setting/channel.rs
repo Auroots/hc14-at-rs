@@ -37,7 +37,7 @@ impl From<u8> for Channel {
     /// 如果给定的通道有效，则构建一个新通道
     fn from(value: u8) -> Self {
         match value {
-            ch if ch > 50 || ch < 1 => panic!("Invalid channel"),
+            ch if !(1..=50).contains(&ch) => panic!("Invalid channel"),
             n => Channel(n),
         }
     }
@@ -50,7 +50,7 @@ impl TryFrom<&[u8]> for Channel {
         let channel = format_converter(value, &RESPONSE_CHANNEL).unwrap() as u8;
         match channel {
             0 => Err(()),
-            ch if ch > 50 || ch < 1 => Err(()),
+            ch if !(1..=50).contains(&ch) => Err(()),
             n => Ok(Channel(n)),
         }
     }
