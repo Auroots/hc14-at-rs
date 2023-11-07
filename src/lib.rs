@@ -1,7 +1,6 @@
 //! Hc14 driver
 //! This driver implements normal, config and sleep functionality of the hc12 module.
-
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 #![deny(unsafe_code)]
 #![deny(missing_docs)]
 

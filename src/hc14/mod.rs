@@ -1,8 +1,9 @@
 pub use at_commands::parser::CommandParser;
 use core::marker::PhantomData;
 pub use embedded_hal::blocking::delay::DelayUs;
+
 pub use embedded_hal::{
-    digital::v2::{InputPin, OutputPin},
+    digital::v2::OutputPin,
     serial::{Read, Write},
 };
 pub use nb::*;

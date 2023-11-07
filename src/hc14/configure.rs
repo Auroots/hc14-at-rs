@@ -9,29 +9,29 @@ use crate::conf::{
     AT_COMMAND_DEFAULT, AT_COMMAND_QUERY_ALL, AT_COMMAND_QUERY_MODE, RESPONSE_OK,
     RESPONSE_RESET_SETTINGS,
 };
+
 use core::{marker::PhantomData, result::Result::*};
-use embedded_hal::digital::v2::OutputPin;
 
 /// 配置模式
 impl<S, P, D> Hc14<S, P, D, Configuration>
 where
     S: Read<u8> + Write<u8>,
-    P: OutputPin + embedded_hal::digital::v2::InputPin,
+    P: OutputPin,
     D: DelayUs<u32>,
 {
     /// ! **"AT配置模式"** 切换到 "**正常模式**"。
-    pub fn into_normal_mode(mut self) -> Result<Hc14<S, P, D, Normal>, <P as InputPin>::Error> {
-        let _ = self.set_pin.set_high();
+    pub fn into_normal_mode(mut self) -> Result<Hc14<S, P, D, Normal>, ()> {
+        let at_off = self.set_pin.set_high();
         self.delay.delay_us(100_000_u32); // delay 0.1s
 
-        match self.set_pin.is_high() {
+        match at_off {
             Ok(_) => Ok(Hc14 {
                 serial: self.serial,
                 set_pin: self.set_pin,
                 delay: self.delay,
                 mode: PhantomData::<Normal>,
             }),
-            Err(e) => Err(nb::Error::Other(e)),
+            Err(_) => Err(nb::Error::Other(())),
         }
     }
 
@@ -45,8 +45,8 @@ where
         for ch in &AT_COMMAND_QUERY_MODE {
             let _ = block!(self.serial.write(*ch));
         }
-        let mut n = 0;
-        let mut buffer = [0u8; 4];
+        let mut n: usize = 0;
+        let mut buffer: [u8; 4] = [0u8; 4];
         while n < 4 {
             if let Ok(ch) = block!(self.serial.read()) {
                 buffer[n] = ch;
@@ -58,7 +58,7 @@ where
 
     /// **[Configuration]**: 将串行端口读取到的指令信息，返回至整个缓冲区
     pub fn read_buffer<'a>(&mut self, buffer: &'a mut [u8]) -> &'a [u8] {
-        let mut count = 0;
+        let mut count: usize = 0;
         for v in buffer.iter_mut() {
             if let Ok(ch) = block!(self.serial.read()) {
                 *v = ch;
@@ -132,8 +132,8 @@ where
     pub fn reset_settings(&mut self) -> bool {
         self.send_buffer(&AT_COMMAND_DEFAULT).unwrap();
 
-        let mut response = [0u8; 12];
-        let mut count = 0;
+        let mut response: [u8; 12] = [0u8; 12];
+        let mut count: usize = 0;
         for v in &mut response {
             if let Ok(ch) = block!(self.serial.read()) {
                 *v = ch;
@@ -157,7 +157,7 @@ where
         for ch in &AT_COMMAND_QUERY_ALL {
             let _ = block!(self.serial.write(*ch));
         }
-        let mut params = [[0u8; 16]; 4];
+        let mut params: [[u8; 16]; 4] = [[0u8; 16]; 4];
         let mut param_slices: [&[u8]; 4] = Default::default();
         for (pi, p) in &mut params.iter_mut().enumerate() {
             for (i, v) in p.iter_mut().enumerate() {
@@ -173,10 +173,10 @@ where
                 }
             }
         }
-        let baud = BaudRate::try_from(param_slices[0]).ok()?;
-        let channel = Channel::try_from(param_slices[1]).ok()?;
-        let speed = Speed::try_from(param_slices[2]).ok()?;
-        let power = TransmissionPower::try_from(param_slices[3]).ok()?;
+        let baud: BaudRate = BaudRate::try_from(param_slices[0]).ok()?;
+        let channel: Channel = Channel::try_from(param_slices[1]).ok()?;
+        let speed: Speed = Speed::try_from(param_slices[2]).ok()?;
+        let power: TransmissionPower = TransmissionPower::try_from(param_slices[3]).ok()?;
 
         Some(Parameters {
             baud,
@@ -203,9 +203,9 @@ where
         mut channel_number: i32,
         buffer: &'a mut [u8],
     ) -> &'a [u8] {
-        let mut channel_command = [65, 84, 43, 67, 48, 48, 48];
+        let mut channel_command: [u8; 7] = [65, 84, 43, 67, 48, 48, 48];
 
-        let mut buf = [0u8; 2];
+        let mut buf: [u8; 2] = [0u8; 2];
         {
             let mut count: usize = 0;
             while channel_number > 0 {

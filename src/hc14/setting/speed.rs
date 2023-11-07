@@ -100,7 +100,7 @@ impl Default for Speed {
 impl TryFrom<&[u8]> for Speed {
     type Error = ();
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let result_speed = format_converter(value, &RESPONSE_SPEED);
+        let result_speed: Result<i32, nb::Error<&str>> = format_converter(value, &RESPONSE_SPEED);
         match result_speed {
             Ok(1) => Ok(Speed::S1),
             Ok(2) => Ok(Speed::S2),

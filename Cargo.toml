@@ -5,13 +5,35 @@ version = "0.2.3"
 authors = ["Auroot Yang <czjishu@gmail.com>"]
 repository = "https://github.com/auroots/hc14-at-rs"
 description = "An embedded-hal driver for the HC-14 serial transceiver module."
+readme = "README.md"
 #license-file = "LICENSE"
 
 [dependencies]
+embedded-hal = { version = "0.2.7", unproven = true }
 at-commands = "0.5.4"
-embedded-hal = "0.2.7"
 nb = "1.1.0"
 num-traits = { version = "0.2.17", default-features = false }
 num-derive = "0.4.1"
 alloc-cortex-m = "0.4.4"
 heapless = "0.7"
+
+# All of the following dependencies are used to test the main function
+cortex-m = "0.7.7"
+cortex-m-rt = "0.7.3"
+panic-halt = "0.2.0"
+cortex-m-semihosting = "0.5.0"
+
+[dependencies.stm32f1xx-hal]
+version = "0.10.0"
+features = ["stm32f103", "rt"]
+
+# Set the default for dependencies.
+[profile.dev.package."*"]
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1
+debug = false
+incremental = false
+lto = true
+opt-level = "s"

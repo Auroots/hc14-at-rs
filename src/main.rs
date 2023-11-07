@@ -5,11 +5,8 @@
 
 use cortex_m_rt::{entry, exception, ExceptionFrame};
 use cortex_m_semihosting::hprintln;
-
 use hc14_at_rs::hc14::Hc14;
-
 use panic_halt as _;
-
 use stm32f1xx_hal::{
     pac,
     prelude::*,
@@ -17,7 +14,7 @@ use stm32f1xx_hal::{
     timer::{SysDelay, SysTimerExt},
 };
 
-#[macro_use]
+// #[macro_use]
 extern crate alloc;
 use alloc_cortex_m::CortexMHeap;
 use core::alloc::Layout;
@@ -45,6 +42,12 @@ fn main() -> ! {
     // Obtain cortex_m and HAL peripheral devices
     let cp = cortex_m::Peripherals::take().unwrap();
     let dp = pac::Peripherals::take().unwrap();
+
+    let mut flash = dp.FLASH.constrain();
+    let rcc = dp.RCC.constrain();
+
+    let mut afio = dp.AFIO.constrain();
+    let mut gpioa = dp.GPIOA.split();
 
     // 使用配置的时钟配置创建一个精准延迟函数
     // Create a custom delay function with precise timing

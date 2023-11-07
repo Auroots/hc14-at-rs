@@ -2,20 +2,19 @@
 use super::*;
 
 use core::marker::PhantomData;
-use heapless::String;
 
 /// Hc14 正常模式的实施
 impl<S, P, D> Hc14<S, P, D, Normal>
 where
     S: Read<u8> + Write<u8>,
-    P: OutputPin + embedded_hal::digital::v2::InputPin,
+    P: OutputPin,
     D: DelayUs<u32>,
 {
     /// !以正常模式构建 Hc14 实例
     pub fn new(serial: S, mut set_pin: P, mut delay: D) -> Result<Self, ()> {
-        let _ = set_pin.set_high();
+        let at_off = set_pin.set_high();
         delay.delay_us(100_000_u32); // delay 0.1s
-        match set_pin.is_high() {
+        match at_off {
             Ok(_) => {
                 return Ok(Self {
                     serial,
@@ -29,20 +28,18 @@ where
     }
 
     /// ! **"正常模式"** 切换到: "**AT配置模式**"
-    pub fn into_configuration_mode(
-        mut self,
-    ) -> Result<Hc14<S, P, D, Configuration>, <P as InputPin>::Error> {
-        let _ = self.set_pin.set_low();
+    pub fn into_configuration_mode(mut self) -> Result<Hc14<S, P, D, Configuration>, ()> {
+        let at_on = self.set_pin.set_low();
         self.delay.delay_us(100_000_u32); // delay 0.1s
 
-        match self.set_pin.is_low() {
+        match at_on {
             Ok(_) => Ok(Hc14 {
                 serial: self.serial,
                 set_pin: self.set_pin,
                 delay: self.delay,
                 mode: PhantomData::<Configuration>,
             }),
-            Err(e) => Err(nb::Error::Other(e)),
+            Err(_) => Err(nb::Error::Other(())),
         }
     }
 
@@ -57,7 +54,7 @@ where
         buffer: &'a mut [u8],
     ) -> Result<&'a [u8], Error<crate::Error>> {
         self.delay.delay_us(100_000_u32); // delay 0.1s
-        let mut count = 0;
+        let mut count: usize = 0;
         for v in buffer.iter_mut() {
             if let Ok(ch) = block!(self.serial.read()) {
                 *v = ch;

@@ -58,6 +58,3 @@ pub const RESPONSE_SPEED: [u8; 5] = *b"OK+S:";
 
 /// 无线发射功率响应前缀
 pub const RESPONSE_POWER: [u8; 6] = *b"OK+P:+";
-
-// 待验证的指令
-//

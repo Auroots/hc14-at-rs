@@ -123,8 +123,8 @@ impl GenerateAtCommand for Channel {
             buf
         }
 
-        let mut buf = [0u8; 3];
-        let bytes = base_10_bytes_padded(self.to_u8().unwrap(), &mut buf);
+        let mut buf: [u8; 3] = [0u8; 3];
+        let bytes: &[u8] = base_10_bytes_padded(self.to_u8().unwrap(), &mut buf);
 
         buffer[..4].copy_from_slice(&AT_COMMAND_SET_CHANNEL);
         buffer[4..].copy_from_slice(bytes);

@@ -5,6 +5,7 @@ use crate::{conf::RESPONSE_BAUD, hc14::normal::format_converter, Error};
 use core::convert::TryFrom;
 use core::result::Result::*;
 use num_derive::{FromPrimitive, ToPrimitive};
+
 /// HC-12 的波特率，Baud rate of HC-12
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, FromPrimitive, ToPrimitive)]
