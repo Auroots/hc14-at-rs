@@ -1,7 +1,9 @@
 //! 关于AT+RX指令的数据结构
 use super::{baudrate::BaudRate, channel::Channel, power::TransmissionPower, speed::Speed};
 
-/// 所有 hc12 参数
+/// 所有 hc14 参数
+///
+/// All hc14 parameters
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Parameters {
     /// 波特率

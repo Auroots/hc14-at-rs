@@ -1,18 +1,27 @@
-use super::{
+use embedded_hal::{
+    blocking::delay::DelayUs,
+    digital::v2::OutputPin,
+    serial::{Read, Write},
+};
+use nb::block;
+
+use crate::{
+    conf::{
+        AT_COMMAND_DEFAULT, AT_COMMAND_QUERY_ALL, AT_COMMAND_QUERY_MODE, RESPONSE_OK,
+        RESPONSE_RESET_SETTINGS,
+    },
     setting::{
         baudrate::BaudRate, channel::Channel, parameters::Parameters, power::TransmissionPower,
         speed::Speed,
     },
-    *,
-};
-use crate::conf::{
-    AT_COMMAND_DEFAULT, AT_COMMAND_QUERY_ALL, AT_COMMAND_QUERY_MODE, RESPONSE_OK,
-    RESPONSE_RESET_SETTINGS,
+    Error,
 };
 
 use core::{marker::PhantomData, result::Result::*};
 
-/// 配置模式
+use super::{Configuration, Hc14, Normal};
+
+/// 配置模式(Configuration Mode)
 impl<S, P, D> Hc14<S, P, D, Configuration>
 where
     S: Read<u8> + Write<u8>,
@@ -21,21 +30,23 @@ where
 {
     /// ! **"AT配置模式"** 切换到 "**正常模式**"。
     pub fn into_normal_mode(mut self) -> Result<Hc14<S, P, D, Normal>, ()> {
-        let at_off = self.set_pin.set_high();
+        let at_off = self.key_pin.set_high();
         self.delay.delay_us(100_000_u32); // delay 0.1s
 
         match at_off {
             Ok(_) => Ok(Hc14 {
                 serial: self.serial,
-                set_pin: self.set_pin,
+                key_pin: self.key_pin,
                 delay: self.delay,
                 mode: PhantomData::<Normal>,
             }),
-            Err(_) => Err(nb::Error::Other(())),
+            Err(_) => Err(()),
         }
     }
 
     /// ! 使用 "AT" 指令检查，当前是否为: **AT配置模式**
+    /// - Use the "AT" command to check if you are currently in: **AT configuration mode**.
+    /// # Example
     /// ```rust
     /// let hc14 = hc14::Hc14::new(serial, set, delay).unwrap();
     /// let mut hc14_configure = hc14.into_configuration_mode().unwrap();
@@ -57,6 +68,7 @@ where
     }
 
     /// **[Configuration]**: 将串行端口读取到的指令信息，返回至整个缓冲区
+    /// - Returns the command information read from the serial port to the entire buffer.
     pub fn read_buffer<'a>(&mut self, buffer: &'a mut [u8]) -> &'a [u8] {
         let mut count: usize = 0;
         for v in buffer.iter_mut() {
@@ -71,16 +83,17 @@ where
         &buffer[..count]
     }
 
-    /// 发送字节
+    /// 发送字节 send byte (computing)
     pub fn send_byte(&mut self, word: u8) -> Result<bool, ()> {
         match block!(self.serial.write(word)) {
             Ok(_) => Ok(true),
-            Err(_) => Err(nb::Error::Other(())),
+            Err(_) => Err(()),
         }
     }
 
     /// **[Configuration]**: 将整个缓冲区写入串行端口
-    pub fn send_buffer(&mut self, buffer: &[u8]) -> Result<bool, Error<crate::Error>> {
+    /// - Write the entire buffer to the serial port
+    pub fn send_buffer(&mut self, buffer: &[u8]) -> Result<bool, Error> {
         let mut verify = false;
         for ch in buffer {
             verify = self.send_byte(*ch).is_ok();
@@ -88,38 +101,40 @@ where
         Ok(verify)
     }
 
-    /// 写入并读取指令
-    /// 可用该方法写入的指令有：power、speed、baudrate、get_version
+    /// # 写入并读取指令
+    /// - 可用该方法写入的指令有：power、speed、baudrate、get_version
     ///
-    /// ### power指令 - 设置模块的发射功率等级
-    /// 出厂默认设置为 3，发射功率最大，通信距离最远。
-    /// 发射功率等级设置为 1，发射功率最小。一般来说，发射 功率每下降 6dB，通信距离会减少一半
+    /// - **power指令 - 设置模块的发射功率等级**
+    ///   - 出厂默认设置为 3，发射功率最大，通信距离最远。
+    ///   - 发射功率等级设置为 1，发射功率最小。一般来说，发射 功率每下降 6dB，通信距离会减少一半
     ///
-    /// ### speed指令 - 设置模块的无线速率，串口透传模式
-    /// 模块有8种无线速率，不同速率是不能互传数据的。S1是最低速率，此时通信速度最慢、无线接收
-    /// 灵敏度最高、通信距离最远。速率越高，通信距离越近，用户可以根据实际情况选择最优速率。
+    /// - **speed指令 - 设置模块的无线速率**
+    ///   - 模块有8种无线速率，不同速率是不能互传数据的。
+    ///   - S1是最低速率，此时通信速度最慢、无线接收灵敏度最高、通信距离最远。
+    ///   - 速率越高，通信距离越近，用户可以根据实际情况选择最优速率。
     ///
-    /// ### baudrate指令 - 设置模块的波特率(bauds per second)
-    ///  1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200
+    /// - **baudrate指令 - 设置模块的波特率(bauds per second)**
+    ///   - 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200
     ///
-    ///
-    /// ### 例程
+    /// # 例程(example)
     /// ```rust
-    /// // 创建hc14实例
+    /// // 创建hc14实例(Create hc14 instance)
     /// let hc14 = hc14::Hc14::new(serial, set, delay).unwrap();
-    /// // 将模块切换至 "AT配置模式"
+    /// // 将模块切换至 "AT配置模式"(Switch the module to "AT configuration mode")
     /// let mut hc14_configure = hc14.into_configuration_mode().unwrap();
-    /// // 获取指令
+    /// // 获取指令( Getting instructions)
     /// let baud_command = BaudRate::Bps9600.make_command();
-    /// // 创建缓冲区变量
+    /// // 创建缓冲区变量(Creating Buffer Variables)
     /// let mut buffer = [0u8; 32];
-    /// // 写入指令，并将返回信息输出到缓冲区
+    /// // 写入指令，并将返回信息输出到缓冲区( Writes the instruction and outputs the return information to the buffer)
     /// hc14_configure.wirte_command(baud_command, &mut buffer);
-    /// //读取缓冲区
+    /// //读取缓冲区(Read Buffer)
     /// assert_eq!(&buffer, b"OK+B:9600\r\n");
     ///
     /// ```
     /// 或者你想通过查询指令，获取的信息
+    ///
+    /// Or the information you want to obtain by querying the command
     /// ```rust
     ///  hc14_configure.wirte_command(&AT_COMMAND_QUERY_VERSION, &mut buffer);
     ///
@@ -128,7 +143,9 @@ where
         self.read_buffer(buffer)
     }
 
-    /// 将 Hc14 重置为默认设置。
+    /// 将 HC-14 重置为默认设置。
+    ///
+    /// Reset the HC-14 to its default settings.
     pub fn reset_settings(&mut self) -> bool {
         self.send_buffer(&AT_COMMAND_DEFAULT).unwrap();
 
@@ -147,7 +164,9 @@ where
             && response[..count] == RESPONSE_RESET_SETTINGS[..count]
     }
 
-    /// 获取 Hc14 的参数
+    /// 获取 HC-14 的参数
+    ///
+    /// Getting the parameters of the HC-14
     /// ```rust
     /// let hc14 = hc14::Hc14::new(serial, set, delay).unwrap();
     /// let mut hc14_configure = hc14.into_configuration_mode().unwrap();
@@ -186,15 +205,18 @@ where
         })
     }
 
-    /// 设置无线信道, 信道范围从1-50
-    /// 该设置方法有两个，都是可用的
+    /// 设置无线信道, 信道范围从1-50。
+    /// 该设置方法有两个，都是可用的。
+    ///
+    /// Setting the wireless channel, channel range from 1-50;
+    /// There are two methods for this setting, both of which are available
     /// ```rust
     /// let hc14 = hc14::Hc14::new(serial, set, delay).unwrap();
-    /// // 进入配置模式
+    /// // 进入配置模式(Entering Configuration Mode)
     /// let mut hc14_configure = hc14.into_configuration_mode().unwrap();
-    /// // 创建缓冲区
+    /// // 创建缓冲区(Creating a Buffer)
     /// let mut buffer = [0u8; 16];
-    /// // 执行信道设置指令
+    /// // 执行信道设置指令(Execute channel setting commands)
     /// hc14_configure.wirte_set_channel(2, &mut buffer);
     /// ```
     ///
@@ -215,6 +237,7 @@ where
             }
         }
         // 使用迭代器输出分离的数字
+        // Outputting separated numbers using iterators
         {
             for (index, digit) in buf.iter().rev().enumerate() {
                 let ascii_value: u8 = digit + 48;

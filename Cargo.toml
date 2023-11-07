@@ -2,7 +2,7 @@
 name = "hc14-at-rs"
 edition = "2021"
 version = "0.2.3"
-authors = ["Auroot Yang <czjishu@gmail.com>"]
+authors = ["Auroot <2763833502@qq.com>"]
 repository = "https://github.com/auroots/hc14-at-rs"
 description = "An embedded-hal driver for the HC-14 serial transceiver module."
 readme = "README.md"

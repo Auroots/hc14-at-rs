@@ -7,6 +7,8 @@ use super::{
 
 impl GenerateAtCommand for BaudRate {
     /// 指令生成器: 波特率
+    ///
+    /// Command Generator: Baud Rate
     /// ```rust
     /// let baudrate_9600 = BaudRate::Bps9600;
     /// let baud_command = baudrate_9600.make_command();
@@ -32,6 +34,8 @@ impl GenerateAtCommand for BaudRate {
 
 impl GenerateAtCommand for Speed {
     /// 指令生成器: 无线速率等级，范围：1-8
+    ///
+    /// Command Generator: Wireless Rate Class, Range: 1-8.
     /// ```rust
     /// let speed_s3 = Speed::S3;
     /// let speed_command = speed_s3.make_command();
@@ -58,7 +62,9 @@ impl GenerateAtCommand for Speed {
 
 impl GenerateAtCommand for TransmissionPower {
     /// 指令生成器: 无线发射功率等级，范围：6-20(dbm)
-    /// ```rust
+    ///
+    /// Command Generator: Wireless Transmit Power Level, Range: 6-20 (dbm).
+    ///  ```rust
     /// let power3 = TransmissionPower::new(6).unwrap();
     /// let power_command = power3.make_command();
     /// assert_eq!(power_command, b"AT+P6");
@@ -91,7 +97,9 @@ impl GenerateAtCommand for TransmissionPower {
     }
 }
 impl GenerateAtCommand for Channel {
-    /// 指令生成器: 信道，会将指令填充到指令缓冲区中
+    /// 指令生成器: 无线信道，指令将会填充到缓冲区
+    ///
+    /// Wireless Channel Command Generator: command will fill the buffer.
     /// ```rust
     /// let chaneel_1 = Channel::new(1).unwrap();
     /// let mut chaneel_buffer_1 = [0u8; 7];

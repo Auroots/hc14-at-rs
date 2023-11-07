@@ -1,9 +1,7 @@
-//! 类型状态驱动 Hc14 的状态机。
 use super::*;
-
 use core::marker::PhantomData;
 
-/// Hc14 正常模式的实施
+/// Normal mode
 impl<S, P, D> Hc14<S, P, D, Normal>
 where
     S: Read<u8> + Write<u8>,
@@ -11,13 +9,14 @@ where
     D: DelayUs<u32>,
 {
     /// !以正常模式构建 Hc14 实例
-    pub fn new(serial: S, mut set_pin: P, mut delay: D) -> Result<Self, ()> {
-        let at_off = set_pin.set_high();
+    /// - Building Hc14 Instances in Normal Mode
+    pub fn new(serial: S, mut key_pin: P, mut delay: D) -> Result<Self, ()> {
+        let at_off = key_pin.set_high();
         delay.delay_us(100_000_u32); // delay 0.1s
         match at_off {
             Ok(_) => Ok(Self {
                 serial,
-                set_pin,
+                key_pin,
                 delay,
                 mode: PhantomData::<Normal>,
             }),
@@ -26,14 +25,15 @@ where
     }
 
     /// ! **"正常模式"** 切换到: "**AT配置模式**"
+    /// - **"Normal Mode "** Switch to: "**AT Configuration Mode**"
     pub fn into_configuration_mode(mut self) -> Result<Hc14<S, P, D, Configuration>, ()> {
-        let at_on = self.set_pin.set_low();
+        let at_on = self.key_pin.set_low();
         self.delay.delay_us(100_000_u32); // delay 0.1s
 
         match at_on {
             Ok(_) => Ok(Hc14 {
                 serial: self.serial,
-                set_pin: self.set_pin,
+                key_pin: self.key_pin,
                 delay: self.delay,
                 mode: PhantomData::<Configuration>,
             }),
@@ -42,11 +42,13 @@ where
     }
 
     /// 释放所含资源
+    /// - Release of included resources
     pub fn release(self) -> (S, P, D) {
-        (self.serial, self.set_pin, self.delay)
+        (self.serial, self.key_pin, self.delay)
     }
 
     /// **[Normal]**: 将串行端口读取到的信息，返回至整个缓冲区
+    /// - Returns the information read from the serial port to the entire buffer.
     pub fn read_buffer<'a>(
         &mut self,
         buffer: &'a mut [u8],
@@ -65,7 +67,7 @@ where
         Ok(&buffer[..count])
     }
 
-    /// 发送字节
+    /// 发送字节 send byte (computing)
     pub fn send_byte(&mut self, word: u8) -> Result<bool, ()> {
         match block!(self.serial.write(word)) {
             Ok(_) => Ok(true),
@@ -73,7 +75,7 @@ where
         }
     }
 
-    /// 发送字符串
+    /// 发送字符串(Send String)
     pub fn send_string(&mut self, words: &str) {
         for word in words.as_bytes() {
             if *word == b'\0' {
@@ -84,6 +86,7 @@ where
     }
 
     /// **[Normal]**: 将整个缓冲区写入串行端口
+    ///  - Write the entire buffer to the serial port
     pub fn send_buffer(&mut self, buffer: &[u8]) -> Result<bool, Error<crate::Error>> {
         self.delay.delay_us(100_000_u32); // delay 0.1s
         let mut verify: bool = false;
@@ -94,6 +97,7 @@ where
     }
 
     /// 发送无符号数字
+    /// -  Send unsigned numbers
     pub fn send_number(&mut self, number: u32) {
         let mut length: u32 = 0;
         loop {
@@ -111,6 +115,7 @@ where
     }
 
     // 接收字符串, 最大长度: 40
+    // Receive String, Maximum Length: 40
     // pub fn read_string_40(&mut self) -> String<40> {
     //     let mut result: String<40> = String::new();
     //     loop {
@@ -126,24 +131,24 @@ where
 }
 
 /// 将模块返回的参数格式化为i32
-/// 可用于：baud、
+/// - Format the parameters returned by the module as i32
+///
+/// # Examples
 /// ```rust
-/// // 创建实例
 /// let hc14 = hc14::Hc14::new(serial, set, delay).unwrap();
 /// let mut hc14_configure = hc14.into_configuration_mode().unwrap();
 ///
-/// // 执行AT指令
+/// // 执行AT指令(Execution of AT commands)
 /// let baud_command = BaudRate::Bps9600.make_command();
 /// let mut buffer = [0u8; 32];
 /// hc14_configure.wirte_command(baud_command, &mut buffer);
 ///
-/// // 将缓冲区中的数组格式化为i32
+/// // 将缓冲区中的数组格式化为i32(Format the array in the buffer as i32)
 /// let format_baud = format_converter(&buffer, &RESPONSE_BAUD).unwrap();
 /// assert_eq!(format_baud, 9600);
-///
+///```
 /// ![value]: 读取缓冲区
 /// ![response]：响应类型
-///```
 pub fn format_converter<'a>(value: &'a [u8], response: &'a [u8]) -> Result<i32, &'a str> {
     let result = match response {
         &[79, 75, 43, 80, 58, 43] => CommandParser::parse(value)
@@ -163,36 +168,3 @@ pub fn format_converter<'a>(value: &'a [u8], response: &'a [u8]) -> Result<i32, 
         Err(_) => Err(nb::Error::Other("Error: Type conversion error")),
     }
 }
-
-// /// 在正常模式下对 Hc14 执行读取
-// /// 这只需服从底层串行实现。
-// impl<S, P, D> embedded_hal::serial::Read<u8> for Hc14<S, P, D, Normal>
-// where
-//     S: Read<u8> + Write<u8>,
-//     P: OutputPin,
-//     D: DelayUs<u16>,
-// {
-//     type Error = <S as Read<u8>>::Error;
-
-//     fn read(&mut self) -> nb::Result<u8, Self::Error> {
-//         self.serial.read()
-//     }
-// }
-
-// /// 在正常模式下为 Hc14 执行写入操作。
-// /// 这只需服从底层串行实现。
-// impl<S, P, D> embedded_hal::serial::Write<u8> for Hc14<S, P, D, Normal>
-// where
-//     S: embedded_hal::serial::Read<u8> + embedded_hal::serial::Write<u8>,
-//     P: OutputPin,
-//     D: DelayUs<u16>,
-// {
-//     type Error = <S as Write<u8>>::Error;
-//     fn write(&mut self, word: u8) -> nb::Result<(), Self::Error> {
-//         self.serial.write(word)
-//     }
-
-//     fn flush(&mut self) -> nb::Result<(), Self::Error> {
-//         self.serial.flush()
-//     }
-// }

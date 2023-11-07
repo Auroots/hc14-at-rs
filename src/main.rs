@@ -5,7 +5,7 @@
 
 use cortex_m_rt::{entry, exception, ExceptionFrame};
 use cortex_m_semihosting::hprintln;
-use hc14_at_rs::hc14::Hc14;
+use hc14_at_rs::{self, driver::Hc14};
 use panic_halt as _;
 use stm32f1xx_hal::{
     pac,

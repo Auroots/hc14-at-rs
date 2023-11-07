@@ -1,12 +1,11 @@
-//! 波特率
-
 use super::{parameters::Parameters, speed::Speed};
-use crate::{conf::RESPONSE_BAUD, hc14::normal::format_converter, Error};
+use crate::{conf::RESPONSE_BAUD, driver::normal::format_converter, Error};
 use core::convert::TryFrom;
 use core::result::Result::*;
 use num_derive::{FromPrimitive, ToPrimitive};
 
-/// HC-12 的波特率，Baud rate of HC-12
+/// HC-14 的波特率
+/// Baud rate of HC-14
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, FromPrimitive, ToPrimitive)]
 pub enum BaudRate {
@@ -54,6 +53,10 @@ impl Default for BaudRate {
 
 impl From<u32> for BaudRate {
     /// 将从数值匹配对应波特率，请确保你输入的波特率是模块支持的，否则会`panic`
+    ///
+    /// will match the corresponding baud rate from the value,
+    /// please make sure the baud rate you enter is supported by the module,
+    /// otherwise it will be `panic`.
     fn from(value: u32) -> Self {
         match value {
             1200 => BaudRate::Bps1200,
@@ -71,6 +74,8 @@ impl From<u32> for BaudRate {
 impl TryFrom<&[u8]> for BaudRate {
     type Error = ();
     /// 将接收到的波特率响应，返回为`BaudRate` 类型
+    ///
+    ///  Returns the received baud rate response as a `BaudRate` type.
     /// ```rust
     /// let buffer = b"OK+B:9600\r\n";
     /// assert_eq!(
@@ -95,6 +100,9 @@ impl TryFrom<&[u8]> for BaudRate {
 
 impl Parameters {
     /// 设置参数的波特率，官方没有详细说明所有模式的波特率参数
+    ///
+    /// Set the baud rate of the parameter,
+    /// the official baud rate parameter for all modes is not specified in detail
     pub fn set_baud(&mut self, rate: BaudRate) -> Result<(), Error> {
         match self.speed {
             Speed::S1 => {
@@ -154,6 +162,8 @@ impl Parameters {
     }
 
     /// 尝试获取空中波特率（取决于串行波特率和数据表中的信息），官方没有详细说明
+    /// Attempts to obtain the air baud rate (depending on the serial baud rate and information in the datasheet),
+    /// which is not officially detailed
     pub fn get_air_baud(&self) -> AirBaudRate {
         match self.speed {
             Speed::S1 => AirBaudRate::Bps250000,
@@ -192,8 +202,10 @@ impl Parameters {
 }
 
 impl AirBaudRate {
-    /// 获取该空中波特率的无线灵敏度（单位 dbm)
-    /// 接收灵敏度每下降 6 dBm，通信距离会减少一半。
+    /// 获取该空中波特率的无线灵敏度（单位 dbm)，接收灵敏度每下降 6 dBm，通信距离会减少一半。
+    ///
+    /// Obtain the radio sensitivity (in dbm) for this air baud rate.
+    /// For every 6 dBm drop in receive sensitivity, the communication range is halved.
     pub fn get_wireless_sensitivity_dbm(&self) -> i32 {
         match self {
             AirBaudRate::Bps500 => -124,

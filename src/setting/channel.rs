@@ -1,6 +1,4 @@
-//! 信道
-
-use crate::{conf::RESPONSE_CHANNEL, hc14::normal::format_converter};
+use crate::{conf::RESPONSE_CHANNEL, driver::normal::format_converter};
 use core::convert::TryFrom;
 use num_derive::{FromPrimitive, ToPrimitive};
 
@@ -10,6 +8,8 @@ pub struct Channel(u8);
 
 impl Channel {
     /// 获取以 MHz 为单位获取信道频率
+    ///
+    /// Get channel frequency in MHz.
     pub fn get_freq_mhz(&self) -> Result<f32, &'static str> {
         let channel_mhz: [f32; 50] = [
             415.09, 415.70, 416.31, 416.92, 417.53, 418.14, 419.36, 420.58, 421.19, 421.80, 422.41,
@@ -27,7 +27,9 @@ impl Channel {
 }
 
 impl Default for Channel {
-    /// 默认信道为：28(434.00)
+    /// 默认信道为：28(434.00 MHz)
+    ///
+    /// Default channel is: 28 (434.00 MHz)
     fn default() -> Self {
         Channel(28)
     }
@@ -45,7 +47,9 @@ impl From<u8> for Channel {
 
 impl TryFrom<&[u8]> for Channel {
     type Error = ();
-
+    /// 将接收到的信道响应，返回为`Channel` 类型
+    ///
+    /// Returns the received channel response as a `Channel` type.
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let channel = format_converter(value, &RESPONSE_CHANNEL).unwrap() as u8;
         match channel {
