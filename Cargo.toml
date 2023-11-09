@@ -6,7 +6,7 @@ authors = ["Auroot <2763833502@qq.com>"]
 repository = "https://github.com/auroots/hc14-at-rs"
 description = "An embedded-hal driver for the HC-14 serial transceiver module."
 readme = "README.md"
-#license-file = "LICENSE"
+license-file = "LICENSE"
 
 [dependencies]
 embedded-hal = { version = "0.2.7", unproven = true }
